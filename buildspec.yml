@@ -35,7 +35,67 @@ phases:
       - kubectl config set-cluster k8s --server="$KUBE_URL" --insecure-skip-tls-verify=true
       - kubectl config set-credentials admin --token="$KUBE_TOKEN"
       - kubectl config set-context default --cluster=k8s --user=admin
-      - kubectl config use-context default 
+      - kubectl config use-context default
+      - echo $KUBE_URL
+      - echo $KUBE_TOKEN
+      - kubectl config current-context
+      - |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: payment
+            namespace: user02
+            labels:
+              app: payment
+          spec:
+            ports:
+              - port: 8080
+                targetPort: 8080
+            selector:
+              app: payment
+          EOF
+      - |
+          cat  <<EOF | kubectl apply -f -
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: payment
+            namespace: user02
+            labels:
+              app: payment
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: payment
+            template:
+              metadata:
+                labels:
+                  app: payment
+              spec:
+                containers:
+                  - name: payment
+                    image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$_PROJECT_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION
+                    ports:
+                      - containerPort: 8080
+                    readinessProbe:
+                      httpGet:
+                        path: '/payments'
+                        port: 8080
+                      initialDelaySeconds: 20
+                      timeoutSeconds: 2
+                      periodSeconds: 5
+                      failureThreshold: 10
+                    livenessProbe:
+                      httpGet:
+                        path: '/payments'
+                        port: 8080
+                      initialDelaySeconds: 180
+                      timeoutSeconds: 2
+                      periodSeconds: 5
+                      failureThreshold: 5
+          EOF
 
 #cache:
 #  paths:
