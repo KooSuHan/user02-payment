@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    _PROJECT_NAME: "user05-mypage"
+    _PROJECT_NAME: "user02-payment"
 
 phases:
   install:
@@ -41,44 +41,44 @@ phases:
           apiVersion: v1
           kind: Service
           metadata:
-            name: mypage
-            namespace: team05
+            name: payment
+            namespace: user02
             labels:
-              app: mypage
+              app: payment
           spec:
             ports:
               - port: 8080
                 targetPort: 8080
             selector:
-              app: mypage
+              app: payment
           EOF
       - |
           cat  <<EOF | kubectl apply -f -
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: mypage
-            namespace: team05
+            name: payment
+            namespace: user02
             labels:
-              app: mypage
+              app: payment
           spec:
             replicas: 1
             selector:
               matchLabels:
-                app: mypage
+                app: payment
             template:
               metadata:
                 labels:
-                  app: mypage
+                  app: payment
               spec:
                 containers:
-                  - name: mypage
+                  - name: payment
                     image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$_PROJECT_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION
                     ports:
                       - containerPort: 8080
                     readinessProbe:
                       httpGet:
-                        path: '/deliveries'
+                        path: '/payments'
                         port: 8080
                       initialDelaySeconds: 20
                       timeoutSeconds: 2
@@ -86,7 +86,7 @@ phases:
                       failureThreshold: 10
                     livenessProbe:
                       httpGet:
-                        path: '/deliveries'
+                        path: '/payments'
                         port: 8080
                       initialDelaySeconds: 180
                       timeoutSeconds: 2
